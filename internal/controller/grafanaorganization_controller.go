@@ -18,13 +18,12 @@ package controller
 
 import (
 	"context"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	grafanav1 "github.com/forselli-stratio/grafana-operator/api/v1"
+	grafanaclient "github.com/forselli-stratio/grafana-operator/internal/controller/grafana"
 )
 
 // GrafanaOrganizationReconciler reconciles a GrafanaOrganization object
@@ -37,19 +36,59 @@ type GrafanaOrganizationReconciler struct {
 //+kubebuilder:rbac:groups=grafana.stratio.com,resources=grafanaorganizations/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=grafana.stratio.com,resources=grafanaorganizations/finalizers,verbs=update
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the GrafanaOrganization object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
-func (r *GrafanaOrganizationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+func (r *GrafanaOrganizationReconciler) syncOrganizations(ctx context.Context) (ctrl.Result, error) {
+	//syncLog := log.FromContext(ctx).WithName("GrafanaOrganizationReconciler")
+	//organizationsSynced := 0
 
-	// TODO(user): your logic here
+	var opts []client.ListOption
+
+	// get all grafana organizations
+	allOrganizations := &grafanav1.GrafanaOrganizationList{}
+	err := r.Client.List(ctx, allOrganizations, opts...)
+	if err != nil {
+		return ctrl.Result{
+			Requeue: true,
+		}, err
+	}
+
+	// sync organizations, delete organizations from grafana that do no longer have a cr
+	grafanaClient, err := grafanaclient.NewGrafanaClient("http://localhost:3000")
+	if err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	allGrafanaOrganizations, err := grafanaClient.Orgs()
+
+
+	return ctrl.Result{Requeue: false}, nil
+}
+
+func (r *GrafanaOrganizationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(ctx).WithName("GrafanaOrganizationReconciler")
+
+	// Fetch the GrafanaOrganization
+	var grafanaOrganization grafanav1.GrafanaOrganization
+    if err := r.Get(ctx, req.NamespacedName, &grafanaOrganization); err != nil {
+        log.Error(err, "unable to fetch GrafanaOrganization CR")
+        // we'll ignore not-found errors, since they can't be fixed by an immediate
+        // requeue (we'll need to wait for a new notification), and we can get them
+        // on deleted requests.
+        return ctrl.Result{}, client.IgnoreNotFound(err)
+    }
+
+	log.Info("Reconciling", "spec", grafanaOrganization.Spec)
+
+    // Create Grafana client
+//	g, err := grafanaclient.NewGrafanaClient("http://localhost:3000")
+//	if err != nil {
+//		return ctrl.Result{}, client.IgnoreNotFound(err)
+//	}
+
+	// Check if organization exists in Grafana
+//	orgExists, err := r.Exists(g, grafanaOrganization.Spec.Name)
+//	if err != nil {
+//		log.Error(err, "Unable to fetch Organization from Grafana")
+//		return ctrl.Result{}, client.IgnoreNotFound(err)
+//	}
 
 	return ctrl.Result{}, nil
 }

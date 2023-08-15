@@ -30,19 +30,19 @@ type GrafanaOrganizationSpec struct {
 
 	// +kubebuilder:validation:Required
 	// Grafana Organization name
-	Name string `json:"name"`
-	// +kubebuilder:validation:Required
-	// Grafana Organization tenant
-	Tenant string `json:"tenant"`
-	// +listType=set
-	// List of groups that will have admin role in the Grafana Organization
-	AdminGroups []Group `json:"adminGroups,omitempty"`
-	// +listType=set
-	// List of groups that will have editor role in the Grafana Organization
-	EditorGroups []Group `json:"editorGroups,omitempty"`
-	// +listType=set
-	// List of groups that will have viewer role in the Grafana Organization
-	ViewerGroups []Group `json:"viewerGroups,omitempty"`
+	Lala string `json:"name"`
+//	// +kubebuilder:validation:Required
+//	// Grafana Organization tenant
+//	Tenant string `json:"tenant"`
+//	// +listType=set
+//	// List of groups that will have admin role in the Grafana Organization
+//	AdminGroups []Group `json:"adminGroups,omitempty"`
+//	// +listType=set
+//	// List of groups that will have editor role in the Grafana Organization
+//	EditorGroups []Group `json:"editorGroups,omitempty"`
+//	// +listType=set
+//	// List of groups that will have viewer role in the Grafana Organization
+//	ViewerGroups []Group `json:"viewerGroups,omitempty"`
 }
 
 // +kubebuilder:validation:MinLength=1

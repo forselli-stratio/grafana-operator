@@ -35,42 +35,11 @@ spec:
           spec:
             description: GrafanaOrganizationSpec defines the desired state of GrafanaOrganization
             properties:
-              adminGroups:
-                description: List of groups that will have admin role in the Grafana
-                  Organization
-                items:
-                  maxLength: 256
-                  minLength: 1
-                  type: string
-                type: array
-                x-kubernetes-list-type: set
-              editorGroups:
-                description: List of groups that will have editor role in the Grafana
-                  Organization
-                items:
-                  maxLength: 256
-                  minLength: 1
-                  type: string
-                type: array
-                x-kubernetes-list-type: set
               name:
                 description: Grafana Organization name
                 type: string
-              tenant:
-                description: Grafana Organization tenant
-                type: string
-              viewerGroups:
-                description: List of groups that will have viewer role in the Grafana
-                  Organization
-                items:
-                  maxLength: 256
-                  minLength: 1
-                  type: string
-                type: array
-                x-kubernetes-list-type: set
             required:
             - name
-            - tenant
             type: object
           status:
             description: GrafanaOrganizationStatus defines the observed state of GrafanaOrganization
