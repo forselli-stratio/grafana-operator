@@ -89,6 +89,15 @@ type GrafanaOrganizationList struct {
 	Items           []GrafanaOrganization `json:"items"`
 }
 
+func (in *GrafanaOrganizationList) Find(name string) *GrafanaOrganization {
+	for _, organization := range in.Items {
+		if  organization.Name == name {
+			return &organization
+		}
+	}
+	return nil
+}
+
 func init() {
 	SchemeBuilder.Register(&GrafanaOrganization{}, &GrafanaOrganizationList{})
 }

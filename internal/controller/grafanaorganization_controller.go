@@ -18,12 +18,13 @@ package controller
 
 import (
 	"context"
+
+	v1 "github.com/forselli-stratio/grafana-operator/api/v1"
+	grafanaclient "github.com/forselli-stratio/grafana-operator/internal/controller/grafana"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	grafanav1 "github.com/forselli-stratio/grafana-operator/api/v1"
-	grafanaclient "github.com/forselli-stratio/grafana-operator/internal/controller/grafana"
 )
 
 // GrafanaOrganizationReconciler reconciles a GrafanaOrganization object
@@ -37,26 +38,38 @@ type GrafanaOrganizationReconciler struct {
 //+kubebuilder:rbac:groups=grafana.stratio.com,resources=grafanaorganizations/finalizers,verbs=update
 
 func (r *GrafanaOrganizationReconciler) syncOrganizations(ctx context.Context) (ctrl.Result, error) {
-	//syncLog := log.FromContext(ctx).WithName("GrafanaOrganizationReconciler")
-	//organizationsSynced := 0
+	log := log.FromContext(ctx)
 
+	// get all grafana organizations crds
+	allGrafanaOrganizationsCrds := &v1.GrafanaOrganizationList{}
 	var opts []client.ListOption
-
-	// get all grafana organizations
-	allOrganizations := &grafanav1.GrafanaOrganizationList{}
-	err := r.Client.List(ctx, allOrganizations, opts...)
+	err := r.Client.List(ctx, allGrafanaOrganizationsCrds, opts...)
 	if err != nil {
 		return ctrl.Result{
 			Requeue: true,
 		}, err
 	}
 
-	// sync organizations, delete organizations from grafana that do no longer have a cr
-	grafanaClient, err := grafanaclient.NewGrafanaClient("http://localhost:3000")
+	// get all grafana organizations
+	g, err := grafanaclient.NewGrafanaClient("http://localhost:3000")
 	if err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	allGrafanaOrganizations, err := grafanaClient.Orgs()
+	allGrafanaOrganizations, err := g.Orgs()
+
+	// sync organizations, delete organizations from grafana that do no longer have a cr
+	for _, organization := range allGrafanaOrganizations {
+		if allGrafanaOrganizationsCrds.Find(organization.Name) == nil {
+			g, err := grafanaclient.NewGrafanaClient("http://localhost:3000")
+			if err != nil {
+				return ctrl.Result{}, client.IgnoreNotFound(err)
+			}
+			err = g.DeleteOrg(organization.ID)
+			if err != nil {
+				log.Error(err, "Unable to delete Grafana organization")
+			}
+		}
+	}
 
 
 	return ctrl.Result{Requeue: false}, nil
@@ -66,7 +79,7 @@ func (r *GrafanaOrganizationReconciler) Reconcile(ctx context.Context, req ctrl.
 	log := log.FromContext(ctx).WithName("GrafanaOrganizationReconciler")
 
 	// Fetch the GrafanaOrganization
-	var grafanaOrganization grafanav1.GrafanaOrganization
+	var grafanaOrganization v1.GrafanaOrganization
     if err := r.Get(ctx, req.NamespacedName, &grafanaOrganization); err != nil {
         log.Error(err, "unable to fetch GrafanaOrganization CR")
         // we'll ignore not-found errors, since they can't be fixed by an immediate
@@ -96,6 +109,6 @@ func (r *GrafanaOrganizationReconciler) Reconcile(ctx context.Context, req ctrl.
 // SetupWithManager sets up the controller with the Manager.
 func (r *GrafanaOrganizationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&grafanav1.GrafanaOrganization{}).
+		For(&v1.GrafanaOrganization{}).
 		Complete(r)
 }

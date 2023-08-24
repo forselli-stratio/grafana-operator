@@ -1,0 +1,7 @@
+1. Fetch GrafanaOrganizationList
+2. Sync GrafanaOrganizationList
+3. Sync users with roles
+
+3. Check the users created in the organization and his role
+4. Check the users created in Gosec group assigned to each role
+5. Check the differente between 3 and 4 and create the users missing and delete the ones that are no longer in gosec
