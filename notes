@@ -5,3 +5,12 @@
 3. Check the users created in the organization and his role
 4. Check the users created in Gosec group assigned to each role
 5. Check the differente between 3 and 4 and create the users missing and delete the ones that are no longer in gosec
+
+# GRAFANA KEOS
+
+kubectl port-forward svc/grafana  -n keos-metrics 3000:80
+curl -k http://localhost:3000/api/orgs --user "admin_api:EMhQqTxA4s"
+
+## Update org name
+
+curl -X PUT "http://localhost:3000/api/orgs/1" -u "admin_api:EMhQqTxA4s" -H "Content-Type: application/json" -d '{"name": "Test"}'

@@ -29,20 +29,20 @@ type GrafanaOrganizationSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +kubebuilder:validation:Required
-	// Grafana Organization name
-	Lala string `json:"name"`
-//	// +kubebuilder:validation:Required
-//	// Grafana Organization tenant
-//	Tenant string `json:"tenant"`
-//	// +listType=set
-//	// List of groups that will have admin role in the Grafana Organization
-//	AdminGroups []Group `json:"adminGroups,omitempty"`
-//	// +listType=set
-//	// List of groups that will have editor role in the Grafana Organization
-//	EditorGroups []Group `json:"editorGroups,omitempty"`
-//	// +listType=set
-//	// List of groups that will have viewer role in the Grafana Organization
-//	ViewerGroups []Group `json:"viewerGroups,omitempty"`
+	// Wheter it is or it isn't Grafana main organization
+	IsMainOrg bool `json:"ismainorg"`
+	// // +kubebuilder:validation:Required
+	// // Grafana Organization tenant
+	// Tenant string `json:"tenant"`
+	// // +listType=set
+	// // List of groups that will have admin role in the Grafana Organization
+	// AdminGroups []Group `json:"adminGroups,omitempty"`
+	// // +listType=set
+	// // List of groups that will have editor role in the Grafana Organization
+	// EditorGroups []Group `json:"editorGroups,omitempty"`
+	// // +listType=set
+	// // List of groups that will have viewer role in the Grafana Organization
+	// ViewerGroups []Group `json:"viewerGroups,omitempty"`
 }
 
 // +kubebuilder:validation:MinLength=1
@@ -91,7 +91,7 @@ type GrafanaOrganizationList struct {
 
 func (in *GrafanaOrganizationList) Find(name string) *GrafanaOrganization {
 	for _, organization := range in.Items {
-		if  organization.Name == name {
+		if organization.Name == name {
 			return &organization
 		}
 	}

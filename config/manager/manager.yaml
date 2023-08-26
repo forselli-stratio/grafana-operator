@@ -70,6 +70,17 @@ spec:
         - /manager
         args:
         - --leader-elect
+        env:
+        - name: GRAFANA_USER
+          valueFrom:
+            secretKeyRef:
+              name: grafana-operator
+              key: admin
+        - name: GRAFANA_PASS
+          valueFrom:
+            secretKeyRef:
+              name: grafana-operator
+              key: pass
         image: controller:latest
         name: manager
         securityContext:

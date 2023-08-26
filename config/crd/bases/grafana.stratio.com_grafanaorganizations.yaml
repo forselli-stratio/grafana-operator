@@ -35,11 +35,11 @@ spec:
           spec:
             description: GrafanaOrganizationSpec defines the desired state of GrafanaOrganization
             properties:
-              name:
-                description: Grafana Organization name
-                type: string
+              ismainorg:
+                description: Wheter it is or it isn't Grafana main organization
+                type: boolean
             required:
-            - name
+            - ismainorg
             type: object
           status:
             description: GrafanaOrganizationStatus defines the observed state of GrafanaOrganization

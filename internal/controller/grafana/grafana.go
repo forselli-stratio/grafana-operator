@@ -1,9 +1,12 @@
 package grafana
 
 import (
-	"net/url"
 	"net/http"
+	"net/url"
+	"strconv"
 	"time"
+
+	"github.com/forselli-stratio/grafana-operator/internal/controller/options"
 	gapi "github.com/grafana/grafana-api-golang-client"
 )
 
@@ -13,21 +16,25 @@ type grafanaAdminCredentials struct {
 	apikey   string
 }
 
-func getAdminCredentials() (*grafanaAdminCredentials, error) {
-	//TODO make logic
-	credentials := &grafanaAdminCredentials{}
-	credentials.username = "admin"
-	credentials.password = "admin"
-	return credentials, nil
-}
-
 func NewGrafanaClient(grafanaUrl string) (*gapi.Client, error) {
-	credentials,err := getAdminCredentials()
-	if err != nil {
-		return nil, err
+	opts := options.Parse()
+
+	credentials := &grafanaAdminCredentials{
+		username: opts.GrafanaUser,
+		password: opts.GrafanaPass,
+		apikey: opts.GrafanaApiKey,
 	}
 
-	var timeout time.Duration = 10
+	timeoutStr, _ := strconv.Atoi(opts.GrafanaTimeoutSeconds)
+	var timeout time.Duration
+	if timeoutStr != 0 {
+		timeout = time.Duration(timeoutStr)
+		if timeout < 0 {
+			timeout = 0
+		}
+	} else {
+		timeout = 10
+	}
 
 	clientConfig := gapi.Config{
 		HTTPHeaders: nil,

@@ -20,7 +20,7 @@ import (
 	"context"
 
 	v1 "github.com/forselli-stratio/grafana-operator/api/v1"
-	grafanaclient "github.com/forselli-stratio/grafana-operator/internal/controller/grafana"
+	gapi "github.com/forselli-stratio/grafana-operator/internal/controller/grafana"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,37 +40,46 @@ type GrafanaOrganizationReconciler struct {
 func (r *GrafanaOrganizationReconciler) syncOrganizations(ctx context.Context) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
+	log.Info("syncing Grafana organizations")
+
 	// get all grafana organizations crds
 	allGrafanaOrganizationsCrds := &v1.GrafanaOrganizationList{}
 	var opts []client.ListOption
 	err := r.Client.List(ctx, allGrafanaOrganizationsCrds, opts...)
 	if err != nil {
-		return ctrl.Result{
-			Requeue: true,
-		}, err
+		return ctrl.Result{Requeue: true}, err
 	}
 
 	// get all grafana organizations
-	g, err := grafanaclient.NewGrafanaClient("http://localhost:3000")
+	g, err := gapi.NewGrafanaClient("http://localhost:3000")
 	if err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{Requeue: true}, err
 	}
-	allGrafanaOrganizations, err := g.Orgs()
+	orgs, err := g.Orgs()
+
+	// Remove Grafana Main Org from the slice as it cannot be deleted
+	for i, org := range orgs {
+		if org.ID == 1 {
+			orgs[i] = orgs[len(orgs)-1]
+			break
+		}
+	}
+	orgs = orgs[:len(orgs)-1]
 
 	// sync organizations, delete organizations from grafana that do no longer have a cr
-	for _, organization := range allGrafanaOrganizations {
-		if allGrafanaOrganizationsCrds.Find(organization.Name) == nil {
-			g, err := grafanaclient.NewGrafanaClient("http://localhost:3000")
+	for _, org := range orgs {
+
+		if allGrafanaOrganizationsCrds.Find(org.Name) == nil {
+			g, err := gapi.NewGrafanaClient("http://localhost:3000")
 			if err != nil {
-				return ctrl.Result{}, client.IgnoreNotFound(err)
+				return ctrl.Result{Requeue: true}, err
 			}
-			err = g.DeleteOrg(organization.ID)
+			err = g.DeleteOrg(org.ID)
 			if err != nil {
-				log.Error(err, "Unable to delete Grafana organization")
+				log.Error(err, "Unable to delete Grafana organization: "+org.Name)
 			}
 		}
 	}
-
 
 	return ctrl.Result{Requeue: false}, nil
 }
@@ -78,30 +87,37 @@ func (r *GrafanaOrganizationReconciler) syncOrganizations(ctx context.Context) (
 func (r *GrafanaOrganizationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithName("GrafanaOrganizationReconciler")
 
+	// periodic sync reconcile
+	syncResult, err := r.syncOrganizations(ctx)
+	if err != nil {
+		log.Error(err, "Unable to synchronize Grafana organizations ")
+		return syncResult, err
+	}
+
 	// Fetch the GrafanaOrganization
 	var grafanaOrganization v1.GrafanaOrganization
-    if err := r.Get(ctx, req.NamespacedName, &grafanaOrganization); err != nil {
-        log.Error(err, "unable to fetch GrafanaOrganization CR")
-        // we'll ignore not-found errors, since they can't be fixed by an immediate
-        // requeue (we'll need to wait for a new notification), and we can get them
-        // on deleted requests.
-        return ctrl.Result{}, client.IgnoreNotFound(err)
-    }
+	if err := r.Get(ctx, req.NamespacedName, &grafanaOrganization); err != nil {
+		log.Error(err, "unable to fetch GrafanaOrganization CR")
+		// we'll ignore not-found errors, since they can't be fixed by an immediate
+		// requeue (we'll need to wait for a new notification), and we can get them
+		// on deleted requests.
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
 
 	log.Info("Reconciling", "spec", grafanaOrganization.Spec)
 
-    // Create Grafana client
-//	g, err := grafanaclient.NewGrafanaClient("http://localhost:3000")
-//	if err != nil {
-//		return ctrl.Result{}, client.IgnoreNotFound(err)
-//	}
+	// Create Grafana client
+	//	g, err := gapi.NewGrafanaClient("http://localhost:3000")
+	//	if err != nil {
+	//		return ctrl.Result{}, client.IgnoreNotFound(err)
+	//	}
 
 	// Check if organization exists in Grafana
-//	orgExists, err := r.Exists(g, grafanaOrganization.Spec.Name)
-//	if err != nil {
-//		log.Error(err, "Unable to fetch Organization from Grafana")
-//		return ctrl.Result{}, client.IgnoreNotFound(err)
-//	}
+	//	orgExists, err := r.Exists(g, grafanaOrganization.Spec.Name)
+	//	if err != nil {
+	//		log.Error(err, "Unable to fetch Organization from Grafana")
+	//		return ctrl.Result{}, client.IgnoreNotFound(err)
+	//	}
 
 	return ctrl.Result{}, nil
 }
